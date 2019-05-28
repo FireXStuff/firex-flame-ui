@@ -4,11 +4,12 @@
     <g v-for="(nodeLayout, uuid) in nodeLayoutsByUuid"
        :key="uuid + ''"
        :transform="'translate(' + nodeLayout.x + ',' + nodeLayout.y + ')'"
-       :width="nodeLayout.width + 10"
-       :height="nodeLayout.height + 10"
+       :width="padLayoutValue(nodeLayout.width)"
+       :height="padLayoutValue(nodeLayout.height)"
        :class="{ faded: hasFocusedTaskUuid && focusedTaskUuid !== uuid }">
 
-      <foreignObject :width="nodeLayout.width + 10" :height="nodeLayout.height + 10">
+      <foreignObject :width="padLayoutValue(nodeLayout.width)"
+                     :height="padLayoutValue(nodeLayout.height)">
         <x-collapsable-task-node
           :taskUuid="uuid"
           :width="nodeLayout.width"
@@ -43,6 +44,11 @@ export default {
     },
     fadeTransitionName() {
       return this.shouldFadeInNewNodes ? 'fade' : null;
+    },
+  },
+  methods: {
+    padLayoutValue(val) {
+      return val + 1;
     },
   },
 };

@@ -18,6 +18,7 @@ import { faCaretDown } from '@fortawesome/free-solid-svg-icons/faCaretDown';
 import { faUndo } from '@fortawesome/free-solid-svg-icons/faUndo';
 import { faExclamationCircle } from '@fortawesome/free-solid-svg-icons/faExclamationCircle';
 import { faClock } from '@fortawesome/free-solid-svg-icons/faClock';
+import { faLink } from '@fortawesome/free-solid-svg-icons/faLink';
 
 import {
   FontAwesomeIcon, FontAwesomeLayers, FontAwesomeLayersText,
@@ -26,7 +27,7 @@ import {
 library.add(faBullseye, faEye, faSearch, faListUl, faPlusCircle,
   faSitemap, faFileCode, faTimes, faFire, faTrash,
   faExpandArrowsAlt, faCompressArrowsAlt, faFileAlt, faCaretUp, faCaretDown,
-  faUndo, faExclamationCircle, faClock);
+  faUndo, faExclamationCircle, faClock, faLink);
 
 Vue.component('font-awesome-icon', FontAwesomeIcon);
 Vue.component('font-awesome-layers', FontAwesomeLayers);

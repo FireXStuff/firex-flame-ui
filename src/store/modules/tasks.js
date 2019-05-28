@@ -52,6 +52,11 @@ const tasksGetters = {
   flameDataAndNameByUuid: state => _.mapValues(state.allTasksByUuid,
     n => _.pick(n, ['flame_data', 'name', 'parent_id', 'uuid'])),
 
+  chainsByUuid: state => _.mapValues(
+    _.pickBy(state.allTasksByUuid, t => t.chain_depth > 0),
+    t => _.pick(t, 'prev_chain_entry', 'chain_depth'),
+  ),
+
   descendantTasksByUuid: state => (rootUuid) => {
     const descUuids = getDescendantUuids(rootUuid, state.allTasksByUuid);
     return orderByTaskNum(_.pick(state.allTasksByUuid, [rootUuid].concat(descUuids)));
@@ -107,7 +112,7 @@ const actions = {
   },
 
   setTasks(context, tasksByUuid) {
-    context.commit('setTasks', Object.freeze(tasksByUuid));
+    context.commit('setTasks', tasksByUuid);
   },
 
   addTasksData(context, newDataByUuid) {
@@ -170,6 +175,35 @@ const actions = {
 
 };
 
+function findChainRootUuid(tasksByUuid, uuid) {
+  let taskToCheck = tasksByUuid[uuid];
+  while (taskToCheck) {
+    if (taskToCheck.chain_depth === 0) {
+      return taskToCheck.uuid;
+    }
+    const parentTask = tasksByUuid[taskToCheck.parent_id];
+    if (taskToCheck.chain_depth === 1) {
+      // If a task has chain depth of 1, that means the previous task in the chain (it's parent)
+      // is the first task in the chain, and therefore it's grandparent is the root of the chain.
+      return parentTask.parent_id;
+    }
+    taskToCheck = parentTask;
+  }
+  return null;
+}
+
+function addChainFields(tasksByUuid) {
+  return _.mapValues(tasksByUuid, (t) => {
+    if (t.chain_depth > 0 && !_.includes(_.keys(t), 'prev_chain_entry')) {
+      const prevChainEntry = t.parent_id;
+      const chainRootUuid = findChainRootUuid(tasksByUuid, t.uuid);
+      return Object.assign({}, t,
+        { parent_id: chainRootUuid, prev_chain_entry: prevChainEntry });
+    }
+    return t;
+  });
+}
+
 // mutations
 const mutations = {
 
@@ -177,12 +211,14 @@ const mutations = {
 
   addTasksData(state, newDataByUuid) {
     state.allTasksByUuid = Object.freeze(
-      twoDepthAssign(state.allTasksByUuid, newDataByUuid),
+      // TODO: chain fields should likely be added elsewhere.
+      addChainFields(twoDepthAssign(state.allTasksByUuid, newDataByUuid)),
     );
   },
 
   setTasks(state, tasksByUuid) {
-    state.allTasksByUuid = tasksByUuid;
+    // TODO: chain fields should likely be added elsewhere.
+    state.allTasksByUuid = Object.freeze(addChainFields(tasksByUuid));
   },
 
   setDetailedTask(state, detailedTask) {
