@@ -4,9 +4,13 @@ steps:
   args: ['clone', 'https://github.com/FireXStuff/firex-flame-ui.git']
   dir: '$BUILD_ID'
 - name: gcr.io/$PROJECT_ID/firex-alpine-build
-  args: ['sh', '-c', 'sudo npm ci && sudo npm run build && cd dist/ && sudo python3 setup.py sdist && ! git describe --tags --exact-match  || twine upload --username firexdev dist/*']
+  args: ['sh', '-c', 'pip install firexapp && firexapp --chain flame_ui_ci --plugins ./ci/flame_ui_ci.py && sudo cp -r /tmp test_logs']
   dir: '$BUILD_ID/firex-flame-ui'
   secretEnv: ['TWINE_PASSWORD']
+- name: google/cloud-sdk
+  # TODO: set return code value appropriately
+  args: ['sh', '-c', 'gsutil -m cp -r test_logs/* gs://firex_flame_build_logs']
+  dir: '$BUILD_ID/firex-flame-ui'
 
 secrets:
 - kmsKeyName: projects/firex-kit-documentation/locations/global/keyRings/secrets/cryptoKeys/TWINE_PASSWORD
