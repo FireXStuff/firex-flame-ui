@@ -1,15 +1,16 @@
-
+timeout: 1200s
 steps:
 - name: gcr.io/cloud-builders/git
-  args: ['clone', 'https://github.com/FireXStuff/firex-flame-ui.git']
+  args: ['clone', '--single-branch', '--branch', 'firex-cloud-ci', 'https://github.com/FireXStuff/firex-flame-ui.git']
   dir: '$BUILD_ID'
 - name: gcr.io/$PROJECT_ID/firex-alpine-build
-  args: ['sh', '-c', 'pip install firexapp && firexapp --chain flame_ui_ci --plugins ./ci/flame_ui_ci.py && sudo cp -r /tmp test_logs']
+  args: ['sh', '-c', 'sudo pip install firex-flame && firexapp submit --sync --chain flame_ui_ci --plugins ./ci/flame_ui_ci.py || sudo cp -r /tmp/ test_logs && sudo sed -i "s|/tmp/FireX|/runs/FireX|g" test_logs/*/flame_model/run-metadata.json']
   dir: '$BUILD_ID/firex-flame-ui'
   secretEnv: ['TWINE_PASSWORD']
+  timeout: 1100s
 - name: google/cloud-sdk
   # TODO: set return code value appropriately
-  args: ['sh', '-c', 'gsutil -m cp -r test_logs/* gs://firex_flame_build_logs']
+  args: ['sh', '-c', 'gsutil -m cp -r test_logs/* gs://www.firexflame.com/runs']
   dir: '$BUILD_ID/firex-flame-ui'
 
 secrets:
