@@ -77,6 +77,7 @@ const router = new Router({
     {
       path: '/:inputFireXId(FireX-.*-\\d+)?',
       component: XTasksParent,
+      props: route => ({ revokeRootNow: route.path.endsWith('/revoke') }),
       children: [
         {
           path: 'list',
@@ -137,6 +138,10 @@ const router = new Router({
           name: 'XLogsDir',
           component: XDirectoryListing,
           props: true,
+        },
+        {
+          path: 'revoke',
+          component: XHeaderedGraph,
         },
         // default path must be last.
         {

@@ -13,6 +13,27 @@
     to be initialized. -->
     <router-view v-if="hasTasks"></router-view>
     <x-error v-else-if="errorDetailMessage" :message="errorDetailMessage"></x-error>
+
+    <div v-if="revokeRootNow" class="modal fade" id="confirmRevokeModal" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              Are you sure the entire run should be killed?
+            </h5>
+            <button type="button" class="close" data-dismiss="modal">
+              <span>&times;</span>
+            </button>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-danger" @click="revokeRoot" data-dismiss="modal">
+              Kill
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -29,6 +50,11 @@ import XError from './XError.vue';
 export default {
   name: 'XTasksParent',
   components: { XError },
+  props: {
+    revokeRootNow: {
+      type: Boolean, default: false,
+    },
+  },
   data() {
     return {
       updating: false,
@@ -43,6 +69,7 @@ export default {
       liveUpdate: state => state.graph.liveUpdate,
       isApiConnected: state => state.tasks.apiConnected,
       uiConfig: state => state.header.uiConfig,
+      isFirstLayout: state => state.graph.isFirstLayout,
     }),
     ...mapGetters({
       rootUuid: 'tasks/rootUuid',
@@ -68,11 +95,14 @@ export default {
     },
   },
   created() {
-    eventHub.$on('revoke-root', () => { this.revokeTask(this.rootUuid); });
+    eventHub.$on('revoke-root', () => { this.revokeRoot(); });
     eventHub.$on('revoke-task', (uuid) => { this.revokeTask(uuid); });
     eventHub.$on('graph-refresh', () => { this.updateFullTasksState(this.liveUpdate); });
   },
   methods: {
+    revokeRoot() {
+      this.revokeTask(this.rootUuid);
+    },
     fetchNodesByUuidFromRecFile(recFileUrl) {
       return fetch(recFileUrl)
         .then(r => r.text())
@@ -140,7 +170,9 @@ export default {
           () => {
             const confirmationDetail = isRoot ? 'Run' : 'Task';
             this.displayMessage = { content: `${confirmationDetail} terminated`, color: '#F40' };
-            setTimeout(() => { this.displayMessage = { content: '', color: '' }; }, 4000);
+            setTimeout(() => {
+              this.displayMessage = { content: '', color: '' };
+            }, 4000);
           },
           (errResponse) => {
             if (!_.isNil(errResponse) && _.get(errResponse, 'timeout', false)) {
@@ -148,7 +180,9 @@ export default {
             } else {
               // non-timeout failure.
               this.displayMessage = { content: 'UNSUCCESSFUL TERMINATION', color: '#BBB' };
-              setTimeout(() => { this.displayMessage = { content: '', color: '' }; }, 8000);
+              setTimeout(() => {
+                this.displayMessage = { content: '', color: '' };
+              }, 8000);
             }
           },
         );
@@ -269,6 +303,12 @@ export default {
     },
     // UI Config is lazy loaded and not valid initially, therefore don't set 'immediate'.
     uiConfig() { this.resetDataAndUpdateApiAccessor(); },
+    isFirstLayout(newIsFirstLayout, oldIsFirstLayout) {
+      if (oldIsFirstLayout && !newIsFirstLayout && this.revokeRootNow) {
+        // Let graph render to show progress, then prompt for revoke confirmation.
+        this.revokeRoot();
+      }
+    },
   },
   beforeRouteEnter(to, from, next) {
     tasksViewKeyRouteChange(to, from, next, (vm, uiConfig) => vm.commitUiConfig(uiConfig));
